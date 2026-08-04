@@ -1,15 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "api/webhook.py": {
-      "memory": 512,
-      "maxDuration": 15,
-      "includeFiles": "bot/**"
-    },
-    "api/cron.py": {
+    "app.py": {
       "memory": 512,
       "maxDuration": 60,
-      "includeFiles": "bot/**"
+      "excludeFiles": "{tests/**,data/**,.venv/**}"
     }
   },
   "crons": [
