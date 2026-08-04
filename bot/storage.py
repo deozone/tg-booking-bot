@@ -182,8 +182,13 @@ class JsonStore:
 
 
 def create_store() -> Store:
-    url = os.getenv("UPSTASH_REDIS_REST_URL")
-    token = os.getenv("UPSTASH_REDIS_REST_TOKEN")
+    """Redis, если заданы его переменные, иначе локальный файл.
+
+    Vercel подставляет имена по-разному в зависимости от того, как подключено
+    хранилище — из маркетплейса Upstash или через встроенный KV, — поэтому смотрим оба.
+    """
+    url = os.getenv("UPSTASH_REDIS_REST_URL") or os.getenv("KV_REST_API_URL")
+    token = os.getenv("UPSTASH_REDIS_REST_TOKEN") or os.getenv("KV_REST_API_TOKEN")
     if url and token:
         return UpstashStore(url, token)
     return JsonStore(os.getenv("LOCAL_STORE_PATH", "data/bookings.json"))

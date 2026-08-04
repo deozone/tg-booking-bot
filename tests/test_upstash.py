@@ -73,6 +73,21 @@ def config():
     return get_config()
 
 
+def test_store_choice_by_env(monkeypatch, tmp_path):
+    """Без переменных Redis — файл; с любым из двух вариантов имён — Redis."""
+    from bot.storage import JsonStore, UpstashStore, create_store
+
+    for name in ("UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN",
+                 "KV_REST_API_URL", "KV_REST_API_TOKEN"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("LOCAL_STORE_PATH", str(tmp_path / "b.json"))
+    assert isinstance(create_store(), JsonStore)
+
+    monkeypatch.setenv("KV_REST_API_URL", "https://example.upstash.io")
+    monkeypatch.setenv("KV_REST_API_TOKEN", "token")
+    assert isinstance(create_store(), UpstashStore)
+
+
 async def test_basic_commands(store):
     assert await store.get("missing") is None
     await store.set("k", "v")
