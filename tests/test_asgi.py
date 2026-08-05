@@ -9,11 +9,14 @@ import pytest
 from app import app
 
 
-async def call(method: str, path: str, body: bytes = b"", headers: dict | None = None):
+async def call(
+    method: str, path: str, body: bytes = b"", headers: dict | None = None, query: str = ""
+):
     scope = {
         "type": "http",
         "method": method,
         "path": path,
+        "query_string": query.encode(),
         "headers": [(k.lower().encode(), v.encode()) for k, v in (headers or {}).items()],
     }
     messages = [{"type": "http.request", "body": body, "more_body": False}]
@@ -54,6 +57,14 @@ async def test_webhook_survives_broken_body(monkeypatch):
     )
     assert status == 400
     assert text == "bad json"
+
+
+async def test_setup_requires_key(monkeypatch):
+    """Адрес включения вебхука не должен срабатывать у случайного прохожего."""
+    monkeypatch.setenv("WEBHOOK_SECRET", "s3cret")
+    status, text = await call("GET", "/api/setup", query="key=guess")
+    assert status == 403
+    assert text == "forbidden"
 
 
 async def test_cron_requires_authorization(monkeypatch):

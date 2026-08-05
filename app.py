@@ -6,6 +6,7 @@ Telegram и утренний cron — обслуживает одно мален
 
 * `POST /api/webhook` — апдейты от Telegram;
 * `GET  /api/cron`    — рассылка напоминаний, дёргается по расписанию из vercel.json;
+* `GET  /api/setup`   — разовая настройка: бот сам прописывает свой адрес в Telegram;
 * `GET  /api/webhook` — проверка «жив ли эндпоинт» из браузера.
 
 Функция просыпается на каждый запрос и засыпает: ни фонового цикла, ни памяти между
@@ -19,6 +20,7 @@ import logging
 import os
 import traceback
 from datetime import datetime
+from urllib.parse import parse_qs
 
 from aiogram.types import Update
 
@@ -66,6 +68,23 @@ async def send_reminders() -> int:
     return sent
 
 
+async def setup_webhook(host: str) -> str:
+    """Прописывает адрес этой функции в Telegram — чтобы он слал апдейты сюда."""
+    url = f"https://{host}/api/webhook"
+    bot = build_bot()
+    try:
+        await bot.set_webhook(
+            url,
+            secret_token=os.getenv("WEBHOOK_SECRET") or None,
+            drop_pending_updates=True,
+            allowed_updates=["message", "callback_query"],
+        )
+        me = await bot.get_me()
+        return f"вебхук включён: {url}\nбот @{me.username} готов принимать сообщения"
+    finally:
+        await bot.session.close()
+
+
 async def _read_body(receive) -> bytes:
     body = b""
     while True:
@@ -93,6 +112,18 @@ async def app(scope, receive, send) -> None:
     path = scope["path"].rstrip("/")
     method = scope["method"]
     headers = {key.decode().lower(): value.decode() for key, value in scope["headers"]}
+
+    if path == "/api/setup":
+        secret = os.getenv("WEBHOOK_SECRET")
+        given = parse_qs(scope.get("query_string", b"").decode()).get("key", [""])[0]
+        if secret and given != secret:
+            await _respond(send, 403, "forbidden")
+            return
+        try:
+            await _respond(send, 200, await setup_webhook(headers.get("host", "")))
+        except Exception as error:
+            await _respond(send, 500, f"не вышло: {type(error).__name__}: {error}")
+        return
 
     if path == "/api/cron":
         secret = os.getenv("CRON_SECRET")
