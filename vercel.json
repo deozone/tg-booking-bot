@@ -2,7 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
     "app.py": {
-      "memory": 512,
       "maxDuration": 60,
       "excludeFiles": "{tests/**,data/**,.venv/**}"
     }
