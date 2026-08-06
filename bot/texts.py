@@ -53,12 +53,14 @@ def confirm_card(config: SalonConfig, booking_draft: dict) -> str:
     service = config.service(booking_draft["service"])
     master = config.master(booking_draft["master"])
     day = date.fromisoformat(booking_draft["day"])
+    # Длительность в карточке не показываем: она нужна расписанию, чтобы не сажать
+    # следующего клиента внахлёст, но клиенту это выглядело бы как обещание уложиться
+    # ровно в час — а мастер такого не обещал.
     return (
         "<b>Проверьте запись</b>\n\n"
         f"Услуга: {service.title}\n"
         f"Мастер: {master.name}\n"
         f"Когда: {fmt_date(day)}, {booking_draft['start']}\n"
-        f"Длительность: {service.duration} мин\n"
         f"Стоимость: {service.price_label}"
     )
 
