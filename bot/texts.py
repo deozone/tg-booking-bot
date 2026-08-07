@@ -9,6 +9,18 @@ from .config import SalonConfig
 from .schedule import fmt_date
 
 
+def plural(count: int, one: str, few: str, many: str) -> str:
+    """«1 запись», «2 записи», «5 записей» — обычные русские правила."""
+    tail_two, tail_one = count % 100, count % 10
+    if 11 <= tail_two <= 14:
+        return many
+    if tail_one == 1:
+        return one
+    if 2 <= tail_one <= 4:
+        return few
+    return many
+
+
 def greeting(config: SalonConfig, name: str) -> str:
     return (
         f"<b>{config.title}</b>\n\n"
@@ -145,7 +157,8 @@ def admin_day(config: SalonConfig, day: date, bookings: list[Booking]) -> str:
             f"    {booking.user_name}, {booking.phone}"
         )
     lines.append("")
-    lines.append(f"Итого: {len(bookings)} записей на {revenue:,} ₽".replace(",", " "))
+    word = plural(len(bookings), "запись", "записи", "записей")
+    lines.append(f"Итого: {len(bookings)} {word} на {revenue:,} ₽".replace(",", " "))
     return "\n".join(lines)
 
 
